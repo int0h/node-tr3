@@ -1,6 +1,6 @@
 import test from 'tape';
-import {t} from 'tr3/types';
-import {decodeBinary, encodeBinary} from 'tr3/extensions/all';
+import {t} from '../../types';
+import {decodeBinary, encodeBinary} from '../../extensions/all';
 import { ResolveType, Type } from '../../src/core';
 
 test('encoding of basic types', q => {

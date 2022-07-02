@@ -1,9 +1,9 @@
 import test from 'tape';
 import express from 'express';
 
-import {t, args, returns} from 'tr3/types';
-import {implementCurryApi, apiMiddleware} from 'tr3/api/rpc/server/curry';
-import { initClientApi } from 'tr3/api/rpc/client';
+import {t, args, returns} from '../../../types';
+import {implementCurryApi, apiMiddleware} from '../../../api/rpc/server/curry';
+import { initClientApi } from '../../../api/rpc/client';
 
 const apiScheme = {
     multiply: t.fn(

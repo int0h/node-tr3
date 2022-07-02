@@ -1,6 +1,6 @@
 import test from 'tape';
-import {t} from 'tr3/types';
-import {decodeJs, encodeJs} from 'tr3/extensions/all';
+import {t} from '../../types';
+import {decodeJs, encodeJs} from '../../extensions/all';
 
 test('encoding of basic types', q => {
     q.is(decodeJs(t.int, encodeJs(t.int, 10)), 10);
