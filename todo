@@ -1,0 +1,8 @@
+- don't mutate in setEncoder, setValidator etc. ???
+- better errors
+- improve not found property
+- improve test coverage
+- implement decycle
+- binary encoding
+- encode binary in JSON
+- callbacks

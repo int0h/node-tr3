@@ -1,0 +1,1 @@
+export {initClientApi} from '../../src/api/rpc-curry/client';
