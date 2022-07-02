@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo 'no tests here yet'"
+    "test": "echo 'no tests here yet'",
+    "build": "tsc"
   },
   "directories": {
     "test": "tests"
@@ -28,6 +29,9 @@
     "node-fetch": "^3.0.0",
     "path-to-regexp": "^6.2.0",
     "randexp": "^0.5.3",
+  },
+  "devDependencies": {
+    "typescript": "^4.7.4",
     "tape": "^5.3.1"
   }
 }
