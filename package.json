@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "",
   "main": "index.js",
+  "scripts": {
+    "test": "echo 'no tests here yet'"
+  },
   "directories": {
     "test": "tests"
   },
