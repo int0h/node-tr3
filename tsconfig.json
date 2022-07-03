@@ -9,6 +9,7 @@
         "inlineSourceMap": true,
         "lib": ["es2020", "DOM"]
     },
+    "exclude": ["./tests"],
     "include": [
         "**/*.ts"
     ]

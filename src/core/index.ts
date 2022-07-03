@@ -20,6 +20,7 @@ type HelperMethods = {
     rename: <T>(this: T, name: string) => T,
     isSubtypeOf: (type: GenericType<any>) => boolean;
     refine: <T extends Type<any, object>>(this: T, param: T extends Type<any, infer P> ? Partial<P> : never) => T;
+    extend: <T>(this: T, fn: (type: T) => any) => T;
 }
 
 
@@ -99,6 +100,12 @@ function enhanceType(target: any): any {
             return clone;
         },
 
+        extend<T extends Type<any, any> | GenericType<any>>(this: T, fn: (type: T) => any): T {
+            // const clone = this.clone();
+            fn(this);
+            return this;
+        },
+
         clone<T extends AnyType>(this: T, name?: string): T {
             const newType = cloneType(this);
             newType.typeName = name ? name : newType.typeName;
@@ -132,7 +139,7 @@ function enhanceType(target: any): any {
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
-export function defineExtensionMethod<K extends keyof Methods>(name: K, method: Methods[K]) {
+export function definfeExtensionMethod<K extends keyof Methods>(name: K, method: Methods[K]) {
     methods[name] = method;
 }
 
@@ -173,6 +180,10 @@ export const defGeneric = <TC extends AnyTypeCreator>(name: string, tc: TC): TC 
     enhanceType(fn);
     return fn;
 };
+
+export function getTypeMeta(type: Type<any, any> | GenericType<any>): any {
+    return type.getMeta();
+}
 
 /** immutable */
 // export function extendMeta<T extends (Type<any, any> | GenericType<any>)>(type: T, newKey: string | symbol, value: unknown): T {

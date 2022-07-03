@@ -1,0 +1,1 @@
+export {proxyCustomRestApi} from '../../src/api/rest/client';

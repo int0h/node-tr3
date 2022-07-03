@@ -1,11 +1,12 @@
 import test from 'tape';
 import express from 'express';
 
-import {t, args, returns} from '../../../types';
-import {createApiMiddleware} from '../../../api/rpc/server/curry';
-import { initClientApi } from '../../../api/rpc/client';
+import {t, args, returns, argType, resolves} from '../../../types';
+import {implementCurryApi, apiMiddleware} from '../../../api/rpc/server/curry';
+import { proxyFetchApi } from '../../../api/rpc/client';
+import { jsonCodec } from '../../../src/extensions/codecs/json';
 
-const apiSchema = {
+const apiScheme = {
     multiply: t.fn(
         args(t.float, t.float),
 
@@ -23,20 +24,34 @@ const apiSchema = {
 
         (o: {a: number, b: {c: number}}) => returns(t.promise(t.string)),
     ),
+
+    sum: t.fn(
+        argType(t.number),
+
+        (...args) => resolves(t.number),
+    ),
 };
 
-const apiMiddleware = createApiMiddleware({apiSchema}, {
+const api = implementCurryApi(apiScheme, {
     multiply: ctx => async (a, b) => a * b,
     repeat: ctx => async (str, n) => str.repeat(n),
     serialize: ctx => async (o) => JSON.stringify(o),
+    sum: ctx => async (...args) => args.reduce((a, c) => a + c, 0),
 });
 
 const initServer = async () => {
     const app = express();
+    debugger;
 
     const port = 3000;
 
-    app.use(apiMiddleware);
+    app.use(await apiMiddleware({
+        apiImpl: api,
+        apiSchema: apiScheme,
+        codec: jsonCodec,
+        expressNS: express,
+        contextProvider: async () => ({}),
+    }));
 
     return app.listen(port, () => {
         console.log(`Example app listening at http://localhost:${port}`);
@@ -56,7 +71,9 @@ test('e2e: a', async q => {
     const nodeFetch = (await eval(`import('node-fetch')`)).default;
 
     const server = await initPromise;
-    const api = initClientApi(apiSchema, {
+    const api = proxyFetchApi({
+        apiSchema: apiScheme,
+        codec: jsonCodec,
         fetcher: nodeFetch as any,
         baseUrl: 'http://localhost:3000',
     });
@@ -70,6 +87,8 @@ test('e2e: a', async q => {
 
     const o = {a: 1, b: {c: 3}};
     q.is(await api.serialize(o), JSON.stringify(o));
+
+    q.is(await api.sum(1, 2, 3), 6, 'argType');
 
     server.close();
     q.end();

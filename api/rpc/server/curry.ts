@@ -1,1 +1,1 @@
-export {createApiMiddleware, Context, ResolveCurryApi} from '../../../src/api/rpc-curry/server';
+export {apiMiddleware, implementCurryApi} from '../../../src/api/rpc/server/curry';

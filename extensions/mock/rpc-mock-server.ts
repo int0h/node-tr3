@@ -1,0 +1,1 @@
+export {createRpcMockServer} from '../../src/extensions/mock/rpc-mock-server';

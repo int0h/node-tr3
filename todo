@@ -1,8 +1,29 @@
-- don't mutate in setEncoder, setValidator etc. ???
+# first version
+- investigate and fix duplex memory leaks
+
+
+# later
+- add proper logging layer to apiMiddlewares
+- implement decycle
 - better errors
 - improve not found property
-- improve test coverage
-- implement decycle
-- binary encoding
-- encode binary in JSON
-- callbacks
+
+
+# done
++ support arrays (not only tuples) as function args (e.g. (...args) => number)
++ add optional logging to api servers and proxies
++ fix rest mock server + firstJsArg
++ use func helpers instead of long chain access
++ encode binary in JSON
++ encoder -> codec
++ move ext/basic-types to /types/ext
++ type.setMocker -> setMocker(type)
++ binary encoding
++ callbacks
++ not serializing literals probably will lead to missing information in oneOf. E.g. {type: 'a' (leteral), value: 1} vs. {type: 'b' (literal), value: 2}
++ guard callbacks
++ write binary msg-codec
+
+# won't fix?
+- don't mutate in setEncoder, setValidator etc. ??? (it does not work as types are created inside other types)
+    e.g. genericNumber(() => t.number) <- here t.number is created from inside and refers to unextended type (if immutable)

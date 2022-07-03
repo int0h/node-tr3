@@ -1,9 +1,10 @@
-import {decodeJs, encodeJs} from '../../extensions/encode/js-encode';
 import {guard} from '../../extensions/validate';
 import {AsyncApi, ResolveApi} from '..';
 import { ResolveType, Type } from '../../core';
 import {getRestCfg} from '../../extensions/rest';
-import pathToRegexp, { compile } from 'path-to-regexp';
+import * as pathToRegexp from 'path-to-regexp';
+import { normRestConfig, queryToStr } from './server/common';
+import { extractAsyncFnReturnType, extractFnArgsType } from '../../rtti-utils/fn';
 
 type ImplementRestClientCfg = {
     fetchFn: typeof fetch,
@@ -28,51 +29,69 @@ function processPath(p: string): PathMeta {
             keys.push(i.name);
         }
     });
-    const serialize = compile(p, {
+    const serialize = pathToRegexp.compile(p, {
         encode: encodeURIComponent,
     });
     pathToRegexpCache[p] = {keys, serialize};
     return pathToRegexpCache[p];
 }
 
-export function implementClientRestMethod<T extends Type<(data: any) => Promise<any>, any>>(type: T, implCfg: ImplementRestClientCfg): ResolveType<T> {
-    const restCfg = getRestCfg(type);
-    const fn = async (arg: any): Promise<any> => {
+function implementClientRestMethod<T extends Type<(data: any) => Promise<any>, any>>(fnType: T, implCfg: ImplementRestClientCfg): ResolveType<T> {
+    const restCfg = normRestConfig(getRestCfg(fnType));
+    const fn = async (...args: any[]): Promise<any> => {
         const fetchParams: RequestInit = {
             method: restCfg.method,
             headers: {},
         };
 
-        const bodyParams = {...arg};
+        const {serialize} = processPath(restCfg.path);
 
-        const {keys, serialize} = processPath(restCfg.path);
-        const pathParams: any = {};
-        for (const key of keys) {
-            delete bodyParams[key];
-            pathParams[key] = arg[key];
-        }
-        const path = serialize(pathParams);
+        const {body = '', params = {}, query, contentType} = restCfg.argsCodec.encode(args, extractFnArgsType(fnType));
 
-        if (restCfg.body === 'json') {
-            (fetchParams.headers as Record<string, string>)['Content-Type'] = 'application/json';
-            const encodedArg = encodeJs(type.param.args[0], bodyParams);
-            fetchParams.body = JSON.stringify(encodedArg);
+        if (body) {
+            if (contentType) {
+                (fetchParams.headers as Record<string, string>)['Content-Type'] = contentType;
+            }
+            fetchParams.body = body;
         }
 
-        const response = await implCfg.fetchFn(implCfg.baseUrl + path, fetchParams);
-        const parsedResponse = await response.json();
-        const decodedResult = decodeJs(type.param.returns, parsedResponse);
+        const path = serialize(params);
 
-        return decodedResult;
+        const queryStr = query
+            ? '?' + queryToStr(query)
+            : '';
+
+        const response = await implCfg.fetchFn(implCfg.baseUrl + path + queryStr, fetchParams);
+        if (response.status >= 200 && response.status < 300) {
+            const responseText = await response.text();
+            const decodedResult = restCfg.responseCodec.decode({
+                text: responseText,
+                contentType: (response.headers.get('content-type') ?? '').split(';')[0]
+            }, extractAsyncFnReturnType(fnType));
+            return decodedResult;
+        } else {
+            const errorMsg = response.headers.get('x-tr3-error');
+            if (errorMsg) {
+                throw new Error(errorMsg);
+            }
+            throw new Error(`request to ${path} returned ${response.status} HTTP code`);
+        }
     };
 
-    return guard(type, fn as any);
+    return guard(fnType, fn as any);
 }
 
-export function implementRestClientApi<T extends AsyncApi>(apiCfg: T, implCfg: ImplementRestClientCfg): ResolveApi<T> {
+type ProxyCustomRestApiParams<T extends AsyncApi> = {
+    apiSchema: T;
+    fetchFn: typeof fetch;
+    baseUrl: string;
+}
+
+export function proxyCustomRestApi<T extends AsyncApi>(params: ProxyCustomRestApiParams<T>): ResolveApi<T> {
+    const {apiSchema, baseUrl, fetchFn} = params;
     const res = {} as any;
-    for (const key of Object.keys(apiCfg)) {
-        res[key] = implementClientRestMethod(apiCfg[key], implCfg);
+    for (const key of Object.keys(apiSchema)) {
+        res[key] = implementClientRestMethod(apiSchema[key], {fetchFn, baseUrl});
     }
     return res;
 }

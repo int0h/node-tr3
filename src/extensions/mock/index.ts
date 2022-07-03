@@ -1,5 +1,5 @@
-import { Api, ResolveApi } from '../../api';
-import {ResolveType, Type, defineExtensionMethod, GenericType, NormType, extendMeta} from '../../core';
+import { Api, ResolveApi, ResolveCurryApi } from '../../api';
+import {ResolveType, Type, GenericType, NormType, extendMeta, getTypeMeta} from '../../core';
 
 const mockNamespaceSymbol = Symbol('mockNamespaceSymbol');
 
@@ -10,20 +10,10 @@ type MockerParams = {
     indexer: () => number;
 }
 
-type Mocker<T extends Type<any, any>> = (type: T, params: MockerParams) => ResolveType<T>;
+export type Mocker<T extends Type<any, any>> = (type: T, params: MockerParams) => ResolveType<T>;
 
 type MetaData = {
     mockers: Record<Strategy, Mocker<any>>;
-}
-
-declare module '../../core/' {
-    export interface Meta {
-        [mockNamespaceSymbol]?: MetaData;
-    }
-
-    export interface Methods {
-        setMocker: typeof setMocker;
-    }
 }
 
 const classMockers = new WeakMap<any, (params: MockerParams) => any>();
@@ -44,13 +34,15 @@ export function mockInstance<T extends new (...args: any[]) => any>(Class: T, pa
     return found(params);
 }
 
-defineExtensionMethod('setMocker', setMocker);
+function getMeta(type: Type<any, any> | GenericType<any>): MetaData | undefined {
+    return getTypeMeta(type)[mockNamespaceSymbol];
+}
 
-function setMocker<T extends Type<any, any> | GenericType<any>>(this: T, strategy: Strategy, mocker: Mocker<NormType<T>>): T {
-    return extendMeta(this, mockNamespaceSymbol, {
-        ...this.getMeta()[mockNamespaceSymbol],
+export function setMocker<T extends Type<any, any> | GenericType<any>>(type: T, strategy: Strategy, mocker: Mocker<NormType<T>>): T {
+    return extendMeta(type, mockNamespaceSymbol, {
+        ...getMeta(type),
         mockers: {
-            ...this.getMeta()[mockNamespaceSymbol]?.mockers,
+            ...getMeta(type)?.mockers,
             [strategy]: mocker,
         }
     });
@@ -62,7 +54,7 @@ export function createIndexer() {
 }
 
 export function mockData<T extends Type<any, any>>(type: T, params: MockerParams): ResolveType<T> {
-    const meta = type.getMeta()[mockNamespaceSymbol];
+    const meta = getMeta(type);
     if (!meta) {
         throw new Error(`No mocker set up for type ${type.typeName}`);
     }
@@ -74,6 +66,14 @@ export function mockApi<T extends Api>(api: T, params: MockerParams = {indexer: 
     const res = {} as any;
     for (const key of Object.keys(api)) {
         res[key] = mockData(api[key], params);
+    }
+    return res;
+}
+
+export function mockCurryApi<T extends Api>(api: T, params: MockerParams = {indexer: createIndexer(), strategy: 'basic'}): ResolveCurryApi<T> {
+    const res = {} as any;
+    for (const key of Object.keys(api)) {
+        res[key] = () => mockData(api[key], params);
     }
     return res;
 }

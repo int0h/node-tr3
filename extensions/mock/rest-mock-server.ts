@@ -1,0 +1,1 @@
+export {createCustomRestMockServer} from '../../src/extensions/mock/rest-mock-server';

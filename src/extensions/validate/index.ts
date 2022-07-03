@@ -1,4 +1,4 @@
-import {ResolveType, Type, defineExtensionMethod, GenericType, NormType, extendMeta} from '../../core';
+import {ResolveType, Type, definfeExtensionMethod, GenericType, NormType, extendMeta, getTypeMeta} from '../../core';
 
 const validateNamespaceSymbol = Symbol('validateNamespaceSymbol');
 
@@ -6,24 +6,16 @@ type ValidatorParams = {earlyReturn?: boolean};
 
 type Validator<T extends Type<any, any>> = (type: T, value: ResolveType<T>, parmas: ValidatorParams) => Error[];
 
-type Guardian<T extends Type<any, any>> = (type: T, value: ResolveType<T>) => ResolveType<T>;
+export type Guardian<T extends Type<any, any>> = (type: T, value: ResolveType<T>) => ResolveType<T>;
 
 type MetaData = {
     validator: Validator<any>;
     guardian: Guardian<any>;
 }
 
-declare module '../../core/' {
-    export interface Meta {
-        [validateNamespaceSymbol]?: MetaData;
-    }
-
-    export interface Methods {
-        setValidator: typeof setValidator;
-        setGuardian: typeof setGuardian;
-    }
+function getMeta(type: Type<any, any> | GenericType<any>): MetaData | undefined {
+    return getTypeMeta(type)[validateNamespaceSymbol];
 }
-
 const classValidators = new WeakMap<any, (instance: any) => Error[]>();
 
 export function defineClassValidator<T extends new (...args: any[]) => any>(Class: T, validator: (instance: InstanceType<T>) => Error[]) {
@@ -45,25 +37,22 @@ export function validateInstance<T extends new (...args: any[]) => any>(Class: T
     return [];
 }
 
-defineExtensionMethod('setValidator', setValidator);
-defineExtensionMethod('setGuardian', setGuardian);
-
-function setValidator<T extends Type<any, any> | GenericType<any>, S>(this: T, validator: Validator<NormType<T>>): T {
-    return extendMeta(this, validateNamespaceSymbol, {
-        ...this.getMeta()[validateNamespaceSymbol],
+export function setValidator<T extends Type<any, any> | GenericType<any>, S>(type: T, validator: Validator<NormType<T>>): T {
+    return extendMeta(type, validateNamespaceSymbol, {
+        ...getMeta(type),
         validator,
     });
 }
 
-function setGuardian<T extends Type<any, any> | GenericType<any>, S>(this: T, guardian: Guardian<NormType<T>>): T {
-    return extendMeta(this, validateNamespaceSymbol, {
-        ...this.getMeta()[validateNamespaceSymbol],
+export function setGuardian<T extends Type<any, any> | GenericType<any>, S>(type: T, guardian: Guardian<NormType<T>>): T {
+    return extendMeta(type, validateNamespaceSymbol, {
+        ...getMeta(type),
         guardian
     });
 }
 
 export function guard<T extends Type<any, any>>(type: T, value: ResolveType<T>): ResolveType<T> {
-    const meta = type.getMeta()[validateNamespaceSymbol];
+    const meta = getMeta(type);
     if (!meta) {
         throw new Error(`No validator/guardian set up for type ${type.typeName}`);
     }
@@ -71,7 +60,7 @@ export function guard<T extends Type<any, any>>(type: T, value: ResolveType<T>):
 }
 
 export function validateData<T extends Type<any, any>>(type: T, data: ResolveType<T>, params: ValidatorParams = {}): Error[] {
-    const meta = type.getMeta()[validateNamespaceSymbol];
+    const meta = getMeta(type);
     if (!meta) {
         throw new Error(`No validator/guardian set up for type ${type.typeName}`);
     }

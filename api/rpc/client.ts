@@ -1,1 +1,1 @@
-export {initClientApi} from '../../src/api/rpc-curry/client';
+export {proxyFetchApi} from '../../src/api/rpc/client';

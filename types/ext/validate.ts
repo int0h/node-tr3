@@ -1,0 +1,1 @@
+export {withValidators} from '../../src/types/ext/validate';

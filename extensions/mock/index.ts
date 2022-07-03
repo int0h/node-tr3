@@ -1,0 +1,1 @@
+export {setMocker, defineClassMocker, createIndexer, mockApi, mockData, mockCurryApi, Mocker} from '../../src/extensions/mock';
