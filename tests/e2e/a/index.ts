@@ -2,10 +2,10 @@ import test from 'tape';
 import express from 'express';
 
 import {t, args, returns} from '../../../types';
-import {implementCurryApi, apiMiddleware} from '../../../api/rpc/server/curry';
+import {createApiMiddleware} from '../../../api/rpc/server/curry';
 import { initClientApi } from '../../../api/rpc/client';
 
-const apiScheme = {
+const apiSchema = {
     multiply: t.fn(
         args(t.float, t.float),
 
@@ -25,7 +25,7 @@ const apiScheme = {
     ),
 };
 
-const api = implementCurryApi(apiScheme, {
+const apiMiddleware = createApiMiddleware({apiSchema}, {
     multiply: ctx => async (a, b) => a * b,
     repeat: ctx => async (str, n) => str.repeat(n),
     serialize: ctx => async (o) => JSON.stringify(o),
@@ -36,7 +36,7 @@ const initServer = async () => {
 
     const port = 3000;
 
-    app.use(await apiMiddleware(express, apiScheme, api, {}));
+    app.use(apiMiddleware);
 
     return app.listen(port, () => {
         console.log(`Example app listening at http://localhost:${port}`);
@@ -56,7 +56,7 @@ test('e2e: a', async q => {
     const nodeFetch = (await eval(`import('node-fetch')`)).default;
 
     const server = await initPromise;
-    const api = initClientApi(apiScheme, {
+    const api = initClientApi(apiSchema, {
         fetcher: nodeFetch as any,
         baseUrl: 'http://localhost:3000',
     });
