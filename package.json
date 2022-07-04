@@ -1,6 +1,6 @@
 {
   "name": "tr3",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -17,6 +17,20 @@
   "bugs": {
     "url": "https://github.com/int0h/tr3/issues"
   },
+  "files": [
+    "./index.js",
+    "./index.d.ts",
+    "./core.js",
+    "./core.d.ts",
+    "./api/**/*.js",
+    "./api/**/*.d.ts",
+    "./extensions/**/*.js",
+    "./extensions/**/*.d.ts",
+    "./src/**/*.js",
+    "./src/**/*.d.ts",
+    "./types/**/*.js",
+    "./types/**/*.d.ts"
+  ],
   "homepage": "https://github.com/int0h/tr3#readme",
   "dependencies": {
     "@types/cors": "^2.8.12",
